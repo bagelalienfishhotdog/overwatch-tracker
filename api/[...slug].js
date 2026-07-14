@@ -8,6 +8,25 @@ async function va(h) {
   return null;
 }
 
+async function requireAdmin(h) {
+  const user = await va(h);
+  if (!user) return null;
+
+  if (user.role === 'admin') return user;
+
+  if (user.id) {
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profile && profile.role === 'admin') return user;
+  }
+
+  return null;
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
@@ -190,6 +209,9 @@ module.exports = async function handler(req, res) {
         return res.json(data || []);
       }
       if (req.method === 'POST') {
+        const admin = await requireAdmin(req);
+        if (!admin) return res.status(403).json({ error: 'Admin access required' });
+
         const { name, center_x, center_z, radius, color } = req.body;
         if (!name || center_x == null || center_z == null) return res.status(400).json({ error: 'name, center_x, center_z required' });
         const { data, error } = await supabase.from('perimeters').insert({ server_id: sid, name, center_x, center_z, radius: radius || 500, color: color || '#ff4444', shape_type: 'circle' }).select().single();
@@ -201,6 +223,9 @@ module.exports = async function handler(req, res) {
     if (path.match(/^\/perimeters\/\d+$/)) {
       const id = path.split('/')[2];
       if (req.method === 'DELETE') {
+        const admin = await requireAdmin(req);
+        if (!admin) return res.status(403).json({ error: 'Admin access required' });
+
         await supabase.from('perimeters').delete().eq('id', id);
         return res.json({ ok: true });
       }
@@ -213,6 +238,9 @@ module.exports = async function handler(req, res) {
         return res.json(data || []);
       }
       if (req.method === 'POST') {
+        const admin = await requireAdmin(req);
+        if (!admin) return res.status(403).json({ error: 'Admin access required' });
+
         const { name, url, map_type } = req.body;
         if (!url) return res.status(400).json({ error: 'url required' });
         const id = crypto.randomUUID();
@@ -224,7 +252,15 @@ module.exports = async function handler(req, res) {
 
     // Settings
     if (path === '/settings') {
-      return res.json({ pollIntervalMs: 3000, offlineAfterMissedPolls: 3 });
+      if (req.method === 'GET') {
+        return res.json({ pollIntervalMs: 3000, offlineAfterMissedPolls: 3 });
+      }
+      if (req.method === 'PUT') {
+        const admin = await requireAdmin(req);
+        if (!admin) return res.status(403).json({ error: 'Admin access required' });
+
+        return res.json({ ok: true });
+      }
     }
 
     // Map config
