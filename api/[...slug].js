@@ -17,8 +17,16 @@ module.exports = async function handler(req, res) {
   // Parse path from URL directly since [..slug] may not populate correctly
   const url = new URL(req.url, 'http://localhost');
   const fullPath = url.pathname;
-  const path = fullPath.replace(/^\/api/, '') || '/';
+  // Strip /api prefix if present, normalize to ensure leading slash, strip trailing slash
+  let path = fullPath.replace(/^\/api/, '') || '/';
+  if (!path.startsWith('/')) path = '/' + path;
+  if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
   const sid = url.searchParams.get('server_id') || 'default';
+
+  // Parse body if it's a string (Vercel edge cases)
+  if (req.body && typeof req.body === 'string') {
+    try { req.body = JSON.parse(req.body); } catch {}
+  }
 
   try {
     // Debug endpoint
@@ -62,6 +70,36 @@ module.exports = async function handler(req, res) {
     if (path === '/auth/me') {
       const user = await va(req);
       if (!user) return res.status(401).json({ error: 'Not authenticated' });
+
+      // For access code tokens, return the embedded data
+      if (user.role && user.hidden_features !== undefined) {
+        return res.json({ user });
+      }
+
+      // For Supabase auth tokens, fetch profile and permissions
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profile) {
+        const { data: permissions } = await supabase
+          .from('user_permissions')
+          .select('*')
+          .eq('user_id', profile.id);
+
+        return res.json({
+          user: {
+            id: profile.id,
+            username: profile.username,
+            role: profile.role,
+            permissions: permissions || [],
+            hidden_features: profile.hidden_features || []
+          }
+        });
+      }
+
       return res.json({ user });
     }
 
