@@ -21,6 +21,18 @@ module.exports = async function handler(req, res) {
   const sid = url.searchParams.get('server_id') || 'default';
 
   try {
+    // Debug endpoint
+    if (path === '/debug') {
+      const url = process.env.SUPABASE_URL;
+      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const srk = process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'MISSING';
+      return res.json({
+        supabaseUrl: url ? url.substring(0, 30) + '...' : 'MISSING',
+        supabaseKey: key ? key.substring(0, 30) + '...' : 'MISSING',
+        serviceRoleKey: srk,
+      });
+    }
+
     // Auth routes (public)
     console.log('[api] path:', path, 'method:', req.method);
     if (path === '/auth/login' && req.method === 'POST') {
