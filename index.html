@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OVERWATCH // Player Tracking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <div class="brand"><span class="brand-mark">&#9678;</span><span class="brand-name">OVERWATCH</span><span class="brand-sub">MAP TRACKER</span></div>
+    <div class="topbar-mid">
+      <div class="stat-chip"><span class="chip-label">ONLINE</span><span class="chip-value" id="stat-online">&ndash;</span></div>
+      <div class="stat-chip"><span class="chip-label">TRACKED</span><span class="chip-value" id="stat-tracked">&ndash;</span></div>
+    </div>
+    <div class="topbar-right">
+      <button id="btn-logout" class="topbar-btn" style="display:none;font-size:10px;">LOGOUT</button>
+      <button class="topbar-btn" id="btn-fullscreen" title="Fullscreen">&#x26F6;</button>
+      <span class="conn-dot" id="conn-dot"></span>
+      <span id="conn-label">CONNECTING</span>
+      <span class="clock" id="clock">--:--:--</span>
+    </div>
+  </header>
+  <div id="body-grid">
+    <aside id="sidebar">
+      <div class="panel">
+        <div class="panel-title">SEARCH</div>
+        <input id="search-input" type="text" placeholder="Player name..." autocomplete="off">
+        <div id="roster-list" class="roster-list"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">LAYERS</div>
+        <label class="toggle-row"><input type="checkbox" id="toggle-markers" checked> Players</label>
+        <label class="toggle-row"><input type="checkbox" id="toggle-trail" checked> Trail</label>
+      </div>
+      <div class="panel">
+        <div class="panel-title">NAVIGATE</div>
+        <div class="field-row"><input id="coord-search-x" type="number" placeholder="X" style="flex:1"><input id="coord-search-z" type="number" placeholder="Z" style="flex:1"><button id="btn-coord-go" class="btn" style="flex:0">GO</button></div>
+      </div>
+    </aside>
+    <main id="map-wrap">
+      <div id="map"></div>
+      <div id="reticle-readout">X <span id="reticle-x">&ndash;</span> Z <span id="reticle-z">&ndash;</span> ZOOM <span id="zoom-level">&ndash;</span></div>
+      <div id="selected-banner" class="hidden">
+        <span id="selected-name">&ndash;</span>
+        <button id="btn-focus" class="banner-btn" title="Focus">&#9678;</button>
+        <button id="btn-follow" class="banner-btn" title="Auto follow">&#8594;</button>
+        <button id="btn-deselect" class="banner-btn" title="Deselect">&times;</button>
+      </div>
+    </main>
+    <section id="dossier">
+      <div class="dossier-empty" id="dossier-empty">
+        <div style="padding:20px;color:#5e8a76;font-family:var(--mono);font-size:12px;">
+          Select a player to view their dossier. The map and full dashboard will load once connected to the backend.
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+<link rel="stylesheet" href="/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

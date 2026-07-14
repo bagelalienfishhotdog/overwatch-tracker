@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OVERWATCH // Login</title>
+<style>
+*{box-sizing:border-box;margin:0}
+body{height:100%;background:#060a0d;color:#d4ede1;font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center}
+.card{width:340px;background:#0b1210;border:1px solid #1a3828;border-radius:4px;padding:28px 24px}
+.brand{text-align:center;margin-bottom:24px;font-size:14px;font-weight:700;letter-spacing:2px}
+.brand span{color:#34e58f}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:9px;letter-spacing:1.5px;color:#3a5a4a;margin-bottom:4px}
+.field input{width:100%;background:#0f1c18;border:1px solid #1a3828;color:#d4ede1;font-family:inherit;font-size:12px;padding:8px 10px;border-radius:3px;outline:none}
+.field input:focus{border-color:#1c6b46}
+.btn{width:100%;background:#1c6b46;color:#06120c;border:none;font-family:inherit;font-weight:600;font-size:11px;letter-spacing:1.5px;padding:10px 0;border-radius:3px;cursor:pointer}
+.btn:hover{background:#34e58f}
+.error{display:none;margin-bottom:12px;padding:8px;background:rgba(255,93,93,0.1);border:1px solid rgba(255,93,93,0.25);border-radius:3px;font-size:10px;color:#ff5d5d}
+.error.show{display:block}
+.footer{text-align:center;margin-top:16px}
+.footer a{font-size:10px;color:#5e8a76;text-decoration:none;cursor:pointer}
+.footer a:hover{color:#34e58f}
+#admin-fields{display:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand"><span>&#9678;</span> OVERWATCH</div>
+  <div id="error" class="error"></div>
+  <div class="field">
+    <label id="lbl">ACCESS CODE</label>
+    <input id="main" type="text" placeholder="XXXX-XXXX-XXXX-XXXX" autofocus>
+  </div>
+  <div id="admin-fields">
+    <div class="field"><label>PASSWORD</label><input id="pass" type="password"></div>
+  </div>
+  <button id="submit" class="btn">ENTER</button>
+  <div class="footer"><a id="toggle">Admin Login</a></div>
+</div>
+<script>
+let admin=false;
+document.getElementById('toggle').onclick=()=>{admin=!admin;document.getElementById('admin-fields').style.display=admin?'block':'none';document.getElementById('lbl').textContent=admin?'USERNAME':'ACCESS CODE';document.getElementById('main').placeholder=admin?'admin':'XXXX-XXXX-XXXX-XXXX';document.getElementById('submit').textContent=admin?'LOGIN':'ENTER';document.getElementById('toggle').textContent=admin?'Back to Access Code':'Admin Login'};
+document.getElementById('submit').onclick=async()=>{const v=document.getElementById('main').value.trim();if(!v){showErr('Required');return}if(admin){const p=document.getElementById('pass').value;if(!p){showErr('Password required');return}doLogin(v,p)}else doAccess(v)};
+async function doAccess(c){try{const r=await fetch('/api/auth/access',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:c})});const d=await r.json();if(d.token){localStorage.setItem('auth_token',d.token);localStorage.setItem('auth_user',JSON.stringify(d.user));window.location.href='/'}else showErr(d.error||'Invalid code')}catch{showErr('Connection error')}}
+async function doLogin(u,p){try{const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});const d=await r.json();if(d.token){localStorage.setItem('auth_token',d.token);localStorage.setItem('auth_user',JSON.stringify(d.user));window.location.href='/'}else showErr(d.error||'Login failed')}catch{showErr('Connection error')}}
+function showErr(m){const e=document.getElementById('error');e.textContent=m;e.classList.add('show')}
+document.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('submit').click()});
+</script>
+</body>
+</html>
