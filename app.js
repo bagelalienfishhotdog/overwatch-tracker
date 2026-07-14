@@ -44,8 +44,9 @@
   window.fetch = function (url, options = {}) {
     options.headers = { ...options.headers, ...getAuthHeaders() };
     return originalFetch(url, options).then(res => {
-      // If we get a 401, the token expired - logout
-      if (res.status === 401 && authToken) {
+      // Only redirect on 401 if we're NOT in the boot/auth-check phase
+      // (boot handles its own 401 logic)
+      if (res.status === 401 && authToken && authResolved) {
         clearAuthToken();
         window.location.href = '/login.html';
       }
@@ -124,7 +125,8 @@
   }
   checkTokenExpiry();
 
-  // Check auth on load
+  // Check auth on load — returns a promise so boot() can await it
+  let authResolved = false;
   async function checkAuth() {
     if (!authToken) {
       window.location.href = '/login.html';
@@ -140,15 +142,13 @@
       }
       const data = await res.json();
       storeUser(data.user);
+      authResolved = true;
     } catch {
       clearAuthToken();
       window.location.href = '/login.html';
     }
   }
 
-  checkAuth();
-
-  // Show admin link and logout button after auth check
   function initAuthUI() {
     const adminNav = document.getElementById('admin-nav');
     const logoutBtn = document.getElementById('btn-logout');
@@ -163,19 +163,26 @@
     // Hide features based on hidden_features array
     if (currentUser && currentUser.hidden_features && currentUser.hidden_features.length > 0) {
       currentUser.hidden_features.forEach(feature => {
-        // Hide elements with data-feature attribute
         document.querySelectorAll(`[data-feature="${feature}"]`).forEach(el => {
           el.style.display = 'none';
         });
-        // Also hide tab buttons
         document.querySelectorAll(`[data-tab="${feature}"]`).forEach(el => {
           el.style.display = 'none';
         });
       });
     }
+
+    // Also check permissions array for feature access
+    if (currentUser && currentUser.permissions && currentUser.permissions.length > 0) {
+      currentUser.permissions.forEach(perm => {
+        if (perm.can_read === false) {
+          document.querySelectorAll(`[data-feature="${perm.feature}"]`).forEach(el => {
+            el.style.display = 'none';
+          });
+        }
+      });
+    }
   }
-  // Run after a short delay to allow auth check to complete
-  setTimeout(initAuthUI, 500);
 
   // ---- World <-> map coordinate conversion --------------------------------
   // Uses Dynmap worldtomap matrix from config for accurate coordinate mapping
@@ -652,10 +659,15 @@
   let rosterCache = [];
 
   async function loadRoster() {
-    const res = await fetch('/api/players');
-    rosterCache = await res.json();
-    renderRoster(rosterCache);
-    document.getElementById('stat-tracked').textContent = rosterCache.length;
+    try {
+      const res = await fetch('/api/players');
+      rosterCache = await res.json();
+      if (!Array.isArray(rosterCache)) rosterCache = [];
+      renderRoster(rosterCache);
+      document.getElementById('stat-tracked').textContent = rosterCache.length;
+    } catch (e) {
+      console.error('[roster] failed to load:', e);
+    }
   }
 
   function renderRoster(list) {
@@ -1733,26 +1745,37 @@
 
   // ---- Boot -----------------------------------------------------------------
   async function boot() {
-    await loadServers();
-    await loadSettings();
-    await loadRoster();
-    await loadTileMeta();
-    loadClaims();
-    loadAnalytics();
-    loadGlobalEvents();
-    loadPerimeters();
-    renderBookmarks();
-    const overview = await (await fetch('/api/stats/overview')).json();
-    document.getElementById('stat-tracked').textContent = overview.totalPlayers;
-    document.getElementById('stat-points').textContent = overview.totalPositions.toLocaleString();
-    refreshHeatmap();
-    setInterval(loadRoster, 20000);
-    setInterval(async () => {
-      const o = await (await fetch('/api/stats/overview')).json();
-      document.getElementById('stat-points').textContent = o.totalPositions.toLocaleString();
-    }, 20000);
-    setInterval(loadAnalytics, 30000);
-    setInterval(loadGlobalEvents, 15000);
+    // Wait for auth check to complete before loading any data
+    await checkAuth();
+    initAuthUI();
+    if (!authResolved) return; // auth failed, already redirecting
+
+    try {
+      await loadServers();
+      await loadSettings();
+      await loadRoster();
+      await loadTileMeta();
+      loadClaims();
+      loadAnalytics();
+      loadGlobalEvents();
+      loadPerimeters();
+      renderBookmarks();
+      const overview = await (await fetch('/api/stats/overview')).json();
+      document.getElementById('stat-tracked').textContent = overview.totalPlayers;
+      document.getElementById('stat-points').textContent = overview.totalPositions.toLocaleString();
+      refreshHeatmap();
+      setInterval(loadRoster, 20000);
+      setInterval(async () => {
+        try {
+          const o = await (await fetch('/api/stats/overview')).json();
+          document.getElementById('stat-points').textContent = o.totalPositions.toLocaleString();
+        } catch {}
+      }, 20000);
+      setInterval(loadAnalytics, 30000);
+      setInterval(loadGlobalEvents, 15000);
+    } catch (e) {
+      console.error('[boot] failed:', e);
+    }
   }
   boot();
 })();
