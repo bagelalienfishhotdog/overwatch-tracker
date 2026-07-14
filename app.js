@@ -634,77 +634,9 @@
     } catch (e) { statusEl.textContent = 'Failed: ' + e.message; }
   };
 
-  // ---- Socket.IO ------------------------------------------------------------
-  // No Socket.IO - using polling
+  // ---- Socket.IO replaced with polling ----------------------------------------
   const connDot = document.getElementById('conn-dot');
   const connLabel = document.getElementById('conn-label');
-
-  // socket.on('connect', () => { connDot.classList.add('live'); connLabel.textContent = 'LIVE'; });
-  // socket.on('disconnect', () => { connDot.classList.remove('live'); connLabel.textContent = 'OFFLINE'; });
-  // socket.on('server:switched', (data) => {
-    if (data.activeServerId && data.activeServerId !== currentServerId) switchServer(data.activeServerId);
-  });
-
-  // socket.on('perimeter-alert', (alert) => {
-    // Play alert sound
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      for (let i = 0; i < 3; i++) {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = 880;
-        osc.type = 'square';
-        gain.gain.value = 0.15;
-        osc.start(ctx.currentTime + i * 0.15);
-        osc.stop(ctx.currentTime + i * 0.15 + 0.1);
-      }
-    } catch {}
-
-    // Flash full-width banner
-    const banner = document.getElementById('alert-banner');
-    banner.style.borderColor = alert.color || '#ff4444';
-    banner.innerHTML = `<span style="color:${alert.color || '#ff4444'};font-weight:700">BREACH</span> <b>${alert.display_name}</b> entered perimeter <b>${alert.perimeter_name}</b>`;
-    banner.classList.add('visible');
-    setTimeout(() => banner.classList.remove('visible'), 10000);
-
-    // Status bar flash
-    document.getElementById('perimeter-status').textContent =
-      `ALERT: ${alert.display_name} entered "${alert.perimeter_name}"`;
-    document.getElementById('perimeter-status').style.color = alert.color || '#ff4444';
-    setTimeout(() => {
-      document.getElementById('perimeter-status').textContent = '';
-      document.getElementById('perimeter-status').style.color = '';
-    }, 8000);
-    if (selectedAccount === alert.account) loadIntel(alert.account);
-  });
-
-  // socket.on('players:update', (payload) => {
-    currentLive = payload.players || [];
-    document.getElementById('stat-online').textContent = payload.count ?? currentLive.length;
-    document.getElementById('stat-weather').textContent = payload.isThundering ? 'STORM' : (payload.hasStorm ? 'RAIN' : 'CLEAR');
-    if (!document.getElementById('toggle-markers').checked) return;
-    const accounts = new Set(currentLive.map(p => p.account));
-    for (const p of currentLive) upsertMarker(p);
-    pruneMarkers(accounts);
-    updateRosterDots();
-    updateRosterTowns();
-    if (document.getElementById('town-filter').value) renderRoster(rosterCache);
-    if (selectedAccount && liveMode) refreshDossier(selectedAccount);
-    if (selectedAccount && liveMode && document.getElementById('toggle-trail').checked) extendTrailLive();
-    // Auto follow: pan map to selected player on each update
-    if (followMode && selectedAccount) {
-      const live = currentLive.find(p => p.account === selectedAccount);
-      if (live) map.panTo(toLatLng(live.x, live.z));
-    }
-    // Center map on players after first update
-    if (!mapCentered && currentLive.length > 0) {
-      mapCentered = true;
-      const bounds = L.latLngBounds(currentLive.map(p => toLatLng(p.x, p.z)));
-      map.fitBounds(bounds.pad(0.2), { maxZoom: 4 });
-    }
-  });
 
   setInterval(() => {
     document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB', { hour12: false }) + ' UTC';
