@@ -132,9 +132,82 @@ module.exports = async function handler(req, res) {
     }
 
     // Perimeters
-    if (path === '/perimeters' && req.method === 'GET') {
-      const { data } = await supabase.from('perimeters').select('*').eq('server_id', sid);
-      return res.json(data || []);
+    if (path === '/perimeters') {
+      if (req.method === 'GET') {
+        const { data } = await supabase.from('perimeters').select('*').eq('server_id', sid);
+        return res.json(data || []);
+      }
+      if (req.method === 'POST') {
+        const { name, center_x, center_z, radius, color } = req.body;
+        if (!name || center_x == null || center_z == null) return res.status(400).json({ error: 'name, center_x, center_z required' });
+        const { data, error } = await supabase.from('perimeters').insert({ server_id: sid, name, center_x, center_z, radius: radius || 500, color: color || '#ff4444', shape_type: 'circle' }).select().single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.status(201).json(data);
+      }
+    }
+
+    if (path.match(/^\/perimeters\/\d+$/)) {
+      const id = path.split('/')[2];
+      if (req.method === 'DELETE') {
+        await supabase.from('perimeters').delete().eq('id', id);
+        return res.json({ ok: true });
+      }
+    }
+
+    // Servers
+    if (path === '/servers') {
+      if (req.method === 'GET') {
+        const { data } = await supabase.from('servers').select('*');
+        return res.json(data || []);
+      }
+      if (req.method === 'POST') {
+        const { name, url, map_type } = req.body;
+        if (!url) return res.status(400).json({ error: 'url required' });
+        const id = crypto.randomUUID();
+        const { data, error } = await supabase.from('servers').insert({ id, name: name || 'Server', url, map_type }).select().single();
+        if (error) return res.status(500).json({ error: error.message });
+        return res.status(201).json(data);
+      }
+    }
+
+    // Settings
+    if (path === '/settings') {
+      return res.json({ pollIntervalMs: 3000, offlineAfterMissedPolls: 3 });
+    }
+
+    // Map config
+    if (path === '/mapconfig') {
+      return res.json({ mapType: 'unknown', config: null });
+    }
+
+    // Markers
+    if (path === '/markers') {
+      return res.json({ sets: {} });
+    }
+
+    // Analytics
+    if (path === '/analytics') {
+      return res.json({ towns: [], explorers: [] });
+    }
+
+    // Intel activity profile
+    if (path.match(/^\/intel\/activity-profile\//)) {
+      return res.json({ hourly: new Array(24).fill(0), estimatedSessions: 0 });
+    }
+
+    // Intel session patterns
+    if (path.match(/^\/intel\/session-patterns\//)) {
+      return res.json({ sessions: [], avgDurationFormatted: '0m' });
+    }
+
+    // Intel offline windows
+    if (path.match(/^\/intel\/offline-windows\//)) {
+      return res.json({ windows: [], bestHour: { label: '00:00', offlineChance: 0 }, bestDay: { day: 'Sun', offlineChance: 0 } });
+    }
+
+    // Intel associations
+    if (path.match(/^\/intel\/associations\//)) {
+      return res.json({ associates: [] });
     }
 
     return res.status(404).json({ error: 'Not found' });
