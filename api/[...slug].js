@@ -14,9 +14,11 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const { slug } = req.query;
-  const path = Array.isArray(slug) ? '/' + slug.join('/') : '/';
-  const sid = req.query.server_id || 'default';
+  // Parse path from URL directly since [..slug] may not populate correctly
+  const url = new URL(req.url, 'http://localhost');
+  const fullPath = url.pathname;
+  const path = fullPath.replace(/^\/api/, '') || '/';
+  const sid = url.searchParams.get('server_id') || 'default';
 
   try {
     // Auth routes (public)
