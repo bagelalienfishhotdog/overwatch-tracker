@@ -4,47 +4,230 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OVERWATCH // Player Tracking</title>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+
+<div id="alert-banner" class="alert-banner"></div>
+
 <div id="app">
+
+  <!-- Top bar -->
   <header id="topbar">
-    <div class="brand"><span class="brand-mark">&#9678;</span><span class="brand-name">OVERWATCH</span><span class="brand-sub">MAP TRACKER</span></div>
-    <div class="topbar-mid">
-      <div class="stat-chip"><span class="chip-label">ONLINE</span><span class="chip-value" id="stat-online">&ndash;</span></div>
-      <div class="stat-chip"><span class="chip-label">TRACKED</span><span class="chip-value" id="stat-tracked">&ndash;</span></div>
+    <div class="brand">
+      <span class="brand-mark">&#9678;</span>
+      <span class="brand-name">OVERWATCH</span>
+      <span class="brand-sub">MAP TRACKER</span>
     </div>
+
+    <div class="topbar-mid">
+      <div class="stat-chip">
+        <span class="chip-label">ONLINE</span>
+        <span class="chip-value" id="stat-online">&ndash;</span>
+      </div>
+      <div class="stat-chip">
+        <span class="chip-label">TRACKED</span>
+        <span class="chip-value" id="stat-tracked">&ndash;</span>
+      </div>
+      <div class="stat-chip">
+        <span class="chip-label">FIXES</span>
+        <span class="chip-value" id="stat-points">&ndash;</span>
+      </div>
+      <div class="stat-chip">
+        <span class="chip-label">WEATHER</span>
+        <span class="chip-value" id="stat-weather">&ndash;</span>
+      </div>
+    </div>
+
     <div class="topbar-right">
-      <button id="btn-logout" class="topbar-btn" style="display:none;font-size:10px;">LOGOUT</button>
-      <button class="topbar-btn" id="btn-fullscreen" title="Fullscreen">&#x26F6;</button>
+      <nav id="admin-nav" style="display:none">
+        <a href="/admin.html" style="color:#a3e635;text-decoration:none;font-size:11px;font-weight:600;margin-right:8px;">ADMIN</a>
+      </nav>
+      <button id="btn-logout" class="topbar-btn" style="display:none;font-size:10px;" title="Logout">LOGOUT</button>
+      <button class="topbar-btn" id="btn-fullscreen" title="Fullscreen (F)">&#x26F6;</button>
       <span class="conn-dot" id="conn-dot"></span>
       <span id="conn-label">CONNECTING</span>
       <span class="clock" id="clock">--:--:--</span>
     </div>
   </header>
+
+  <!-- Body -->
   <div id="body-grid">
+
+    <!-- Sidebar -->
     <aside id="sidebar">
+
+      <div class="panel">
+        <div class="panel-title">SERVER</div>
+        <div class="field-row">
+          <select id="server-selector">
+            <option value="">Loading...</option>
+          </select>
+        </div>
+      </div>
+
       <div class="panel">
         <div class="panel-title">SEARCH</div>
-        <input id="search-input" type="text" placeholder="Player name..." autocomplete="off">
+        <input id="search-input" type="text" placeholder="Player name or account..." autocomplete="off">
         <div id="roster-list" class="roster-list"></div>
       </div>
+
+      <div class="panel">
+        <div class="panel-title">TIME RANGE</div>
+        <div class="time-presets" id="time-presets">
+          <button class="preset-btn" data-hours="1">1H</button>
+          <button class="preset-btn" data-hours="6">6H</button>
+          <button class="preset-btn" data-hours="24">24H</button>
+          <button class="preset-btn" data-hours="168">7D</button>
+          <button class="preset-btn" data-hours="720">30D</button>
+          <button class="preset-btn active" data-hours="0">ALL</button>
+        </div>
+        <div class="field-row">
+          <label>FROM</label>
+          <input id="filter-start" type="datetime-local">
+        </div>
+        <div class="field-row">
+          <label>TO</label>
+          <input id="filter-end" type="datetime-local">
+        </div>
+        <div class="field-row btn-row">
+          <button id="btn-apply-range" class="btn">APPLY</button>
+          <button id="btn-clear-range" class="btn btn-ghost">LIVE</button>
+        </div>
+      </div>
+
       <div class="panel">
         <div class="panel-title">LAYERS</div>
+        <label class="toggle-row"><input type="checkbox" id="toggle-tiles" checked> Terrain</label>
+        <div class="field-row" id="tile-scale-row">
+          <label>SCALE</label>
+          <select id="tile-scale">
+            <option value="1">1x Low</option>
+            <option value="2" selected>2x Default</option>
+            <option value="4">4x High</option>
+            <option value="16">16x Ultra</option>
+          </select>
+        </div>
+        <div class="hint" id="tile-status"></div>
+        <label class="toggle-row" data-feature="heatmap"><input type="checkbox" id="toggle-heatmap" checked> Heat map</label>
         <label class="toggle-row"><input type="checkbox" id="toggle-markers" checked> Players</label>
-        <label class="toggle-row"><input type="checkbox" id="toggle-trail" checked> Trail</label>
+        <label class="toggle-row"><input type="checkbox" id="toggle-trail" checked> Trail (selected)</label>
+        <label class="toggle-row"><input type="checkbox" id="toggle-grid" checked> Grid</label>
+        <label class="toggle-row"><input type="checkbox" id="toggle-claims" checked> Claims</label>
+        <div class="field-row">
+          <label>FILTER TOWN</label>
+          <select id="town-filter">
+            <option value="">All towns</option>
+          </select>
+        </div>
       </div>
+
+      <div class="panel" data-feature="perimeters">
+        <div class="panel-title">PERIMETERS</div>
+        <div class="drawing-tools">
+          <button class="draw-btn active" data-shape="circle">&#9711; CIRCLE</button>
+          <button class="draw-btn" data-shape="rectangle">&#9634; RECT</button>
+          <button class="draw-btn" data-shape="polygon">&#9651; POLY</button>
+        </div>
+        <div id="perimeter-list" class="perimeter-list">
+          <span class="hint">No perimeters defined</span>
+        </div>
+        <div class="field-row">
+          <input id="perimeter-name" type="text" placeholder="Name" style="flex:1">
+        </div>
+        <div class="field-row" id="perimeter-radius-row">
+          <label>RADIUS</label>
+          <input id="perimeter-radius" type="number" min="50" step="50" value="500" style="width:60px">
+        </div>
+        <div class="field-row">
+          <label>COLOR</label>
+          <input id="perimeter-color" type="color" value="#ff4444" style="width:30px;padding:0;border:0;background:none">
+        </div>
+        <div class="field-row btn-row">
+          <button id="btn-add-perimeter" class="btn">ADD AT CENTER</button>
+          <button id="btn-draw-perimeter" class="btn btn-secondary">DRAW ON MAP</button>
+          <button id="btn-check-perimeter" class="btn btn-secondary">CHECK</button>
+        </div>
+        <div class="hint" id="perimeter-status"></div>
+      </div>
+
       <div class="panel">
         <div class="panel-title">NAVIGATE</div>
-        <div class="field-row"><input id="coord-search-x" type="number" placeholder="X" style="flex:1"><input id="coord-search-z" type="number" placeholder="Z" style="flex:1"><button id="btn-coord-go" class="btn" style="flex:0">GO</button></div>
+        <div class="field-row">
+          <input id="coord-search-x" type="number" placeholder="X" style="flex:1">
+          <input id="coord-search-z" type="number" placeholder="Z" style="flex:1">
+          <button id="btn-coord-go" class="btn" style="flex:0">GO</button>
+        </div>
+        <div class="bookmark-list" id="bookmark-list">
+          <span class="hint">No bookmarks</span>
+        </div>
+        <div class="field-row btn-row">
+          <button id="btn-add-bookmark" class="btn btn-ghost" style="flex:1">+ BOOKMARK CENTER</button>
+        </div>
       </div>
+
+      <div class="panel" data-feature="export">
+        <div class="panel-title">EXPORT</div>
+        <div class="field-row btn-row">
+          <button id="btn-export-csv" class="btn btn-ghost">CSV</button>
+          <button id="btn-export-json" class="btn btn-ghost">JSON</button>
+        </div>
+      </div>
+
+      <div class="panel" id="settings-panel" data-feature="settings">
+        <div class="panel-title">SETTINGS</div>
+        <div class="field-row">
+          <label>POLL (MS)</label>
+          <input id="settings-poll-interval" type="number" min="1000" step="500" value="3000">
+        </div>
+        <div class="field-row">
+          <label>OFFLINE AFTER</label>
+          <input id="settings-offline-after" type="number" min="1" step="1" value="3">
+        </div>
+        <div class="field-row btn-row">
+          <button id="btn-save-settings" class="btn">SAVE</button>
+        </div>
+        <div class="hint" id="settings-status"></div>
+      </div>
+
+      <div class="panel" id="server-manage-panel">
+        <div class="panel-title">ADD SERVER</div>
+        <div class="field-row">
+          <label>NAME</label>
+          <input id="settings-new-server-name" type="text" placeholder="My Server" autocomplete="off">
+        </div>
+        <div class="field-row">
+          <label>MAP URL</label>
+          <input id="settings-new-server-url" type="url" placeholder="https://map.example.com/" autocomplete="off">
+        </div>
+        <div class="field-row">
+          <label>MAP TYPE</label>
+          <select id="settings-new-server-type">
+            <option value="">Auto-detect</option>
+            <option value="dynmap">Dynmap</option>
+            <option value="squaremap">Squaremap</option>
+            <option value="bluemap">BlueMap</option>
+          </select>
+        </div>
+        <div class="field-row btn-row">
+          <button id="btn-add-server" class="btn btn-ghost">ADD SERVER</button>
+        </div>
+        <div class="hint" id="server-add-status"></div>
+        <div class="panel-title" style="margin-top:8px;">SERVERS</div>
+        <div id="server-list" class="server-list"></div>
+      </div>
+
     </aside>
+
+    <!-- Map -->
     <main id="map-wrap">
       <div id="map"></div>
-      <div id="reticle-readout">X <span id="reticle-x">&ndash;</span> Z <span id="reticle-z">&ndash;</span> ZOOM <span id="zoom-level">&ndash;</span></div>
+      <div id="reticle-readout">X <span id="reticle-x">&ndash;</span> &nbsp; Z <span id="reticle-z">&ndash;</span> &nbsp; ZOOM <span id="zoom-level">&ndash;</span></div>
       <div id="selected-banner" class="hidden">
         <span id="selected-name">&ndash;</span>
         <button id="btn-focus" class="banner-btn" title="Focus">&#9678;</button>
@@ -52,18 +235,188 @@
         <button id="btn-deselect" class="banner-btn" title="Deselect">&times;</button>
       </div>
     </main>
+
+    <!-- Bottom panel -->
     <section id="dossier">
-      <div class="dossier-empty" id="dossier-empty">
-        <div style="padding:20px;color:#5e8a76;font-family:var(--mono);font-size:12px;">
-          Select a player to view their dossier. The map and full dashboard will load once connected to the backend.
+      <!-- Tab bar -->
+      <div class="dossier-tabs" id="dossier-tabs">
+        <button class="dossier-tab active" data-tab="overview">OVERVIEW</button>
+        <button class="dossier-tab" data-tab="intel" id="tab-intel" style="display:none">INTEL</button>
+      </div>
+
+      <!-- Overview tab (default) -->
+      <div class="dossier-tab-content active" id="tab-overview">
+        <div class="dossier-empty" id="dossier-empty">
+          <div class="analytics-container">
+            <div class="analytics-col">
+              <div class="analytics-title">ACTIVE TOWNS</div>
+              <div class="analytics-table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>TOWN</th>
+                      <th>VISITORS</th>
+                      <th>FIXES</th>
+                      <th>ACTIVE</th>
+                    </tr>
+                  </thead>
+                  <tbody id="towns-tbody">
+                    <tr><td colspan="4" class="loading-cell">Loading...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="analytics-col">
+              <div class="analytics-title">TOP EXPLORERS</div>
+              <div class="analytics-table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>PLAYER</th>
+                      <th>DISTANCE</th>
+                    </tr>
+                  </thead>
+                  <tbody id="explorers-tbody">
+                    <tr><td colspan="2" class="loading-cell">Loading...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Global Events Feed -->
+          <div class="analytics-container" style="margin-top:12px;">
+            <div class="analytics-col" style="width:100%;">
+              <div class="analytics-title">RECENT EVENTS</div>
+              <div class="intel-event-filters" id="global-event-filters">
+                <button class="event-filter active" data-type="">ALL</button>
+                <button class="event-filter" data-type="login">LOGIN</button>
+                <button class="event-filter" data-type="logout">LOGOUT</button>
+                <button class="event-filter" data-type="teleport">TELEPORT</button>
+                <button class="event-filter" data-type="afk">AFK</button>
+                <button class="event-filter" data-type="respawn">RESPAWN</button>
+              </div>
+              <div id="global-events-list" style="max-height:200px;overflow-y:auto;">
+                <span class="hint">Loading events...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="dossier-content hidden" id="dossier-content">
+          <div class="dossier-col">
+            <div class="dossier-name" id="d-name">&ndash;</div>
+            <div class="dossier-sub" id="d-account">&ndash;</div>
+            <div class="dossier-sub" id="d-status">&ndash;</div>
+          </div>
+          <div class="dossier-metric">
+            <div class="metric-value" id="d-distance">&ndash;</div>
+            <div class="metric-label">DISTANCE</div>
+          </div>
+          <div class="dossier-metric">
+            <div class="metric-value" id="d-time">&ndash;</div>
+            <div class="metric-label">ONLINE</div>
+          </div>
+          <div class="dossier-metric">
+            <div class="metric-value" id="d-visits">&ndash;</div>
+            <div class="metric-label">VISITS</div>
+          </div>
+          <div class="dossier-metric">
+            <div class="metric-value" id="d-fixes">&ndash;</div>
+            <div class="metric-label">FIXES</div>
+          </div>
+          <div class="dossier-metric">
+            <div class="metric-value" id="d-first">&ndash;</div>
+            <div class="metric-label">FIRST SEEN</div>
+          </div>
+          <div class="dossier-metric">
+            <div class="metric-value" id="d-town">&ndash;</div>
+            <div class="metric-label">LOCATION</div>
+          </div>
+          <div class="dossier-section">
+            <div class="panel-title">TOWN VISITS</div>
+            <div class="dossier-town-visits" id="d-town-visits"><span class="hint">No data</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Intel tab (GEOINT) -->
+      <div class="dossier-tab-content" id="tab-intel-content">
+        <div class="intel-scroll" id="intel-grid">
+
+          <!-- Status bar -->
+          <div class="intel-status-bar" id="intel-status-bar">
+            <span class="intel-status-dot" id="intel-status-dot"></span>
+            <span id="intel-status-online" class="intel-status-text">—</span>
+            <span class="intel-status-sep">|</span>
+            <span id="intel-status-pos" class="intel-status-text">—</span>
+            <span class="intel-status-sep">|</span>
+            <span id="intel-status-town" class="intel-status-text">—</span>
+            <span class="intel-status-sep">|</span>
+            <span id="intel-status-online-time" class="intel-status-text">—</span>
+          </div>
+
+          <!-- Activity + Chart -->
+          <div class="intel-section">
+            <div class="intel-section-title">ACTIVITY PATTERN</div>
+            <div class="intel-stat-row">
+              <div class="intel-stat-pill"><b id="intel-sessions">—</b> sessions</div>
+              <div class="intel-stat-pill"><b id="intel-peak-hour">—</b> peak hour</div>
+              <div class="intel-stat-pill"><b id="intel-peak-day">—</b> peak day</div>
+              <div class="intel-stat-pill"><b id="intel-avg-session">—</b> avg length</div>
+              <div class="intel-stat-pill"><b id="intel-max-session">—</b> longest</div>
+              <div class="intel-stat-pill"><b id="intel-avg-gap">—</b> avg gap</div>
+            </div>
+            <div class="intel-chart" id="intel-hourly-chart"></div>
+          </div>
+
+          <!-- Anomalies (only visible if flags exist) -->
+          <div class="intel-section" id="intel-anomalies-section" style="display:none">
+            <div class="intel-section-title">ANOMALIES</div>
+            <div class="intel-flags" id="intel-flags"></div>
+          </div>
+
+          <!-- Offline windows -->
+          <div class="intel-section">
+            <div class="intel-section-title">OFFLINE WINDOWS</div>
+            <div class="intel-offline-highlight" id="intel-offline-highlight"></div>
+            <div class="intel-offline-bar-chart" id="intel-offline-chart"></div>
+          </div>
+
+          <!-- Associations -->
+          <div class="intel-section">
+            <div class="intel-section-title">ASSOCIATIONS</div>
+            <div class="intel-scroll-inner" id="intel-associations">
+              <span class="hint">No co-location data</span>
+            </div>
+          </div>
+
+          <!-- Events -->
+          <div class="intel-section">
+            <div class="intel-section-title">DETECTED EVENTS</div>
+            <div class="intel-event-filters">
+              <button class="event-filter active" data-type="">ALL</button>
+              <button class="event-filter" data-type="teleport">TELEPORT</button>
+              <button class="event-filter" data-type="afk">AFK</button>
+              <button class="event-filter" data-type="respawn">RESPAWN</button>
+              <button class="event-filter" data-type="perimeter">PERIMETER</button>
+              <button class="event-filter" data-type="login">LOGIN</button>
+              <button class="event-filter" data-type="logout">LOGOUT</button>
+            </div>
+            <div class="intel-scroll-inner" id="intel-events">
+              <span class="hint">No events detected</span>
+            </div>
+          </div>
+
         </div>
       </div>
     </section>
+
   </div>
 </div>
-<link rel="stylesheet" href="/style.css">
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
-<script src="/app.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/app.js?v=21"></script>
 </body>
 </html>
