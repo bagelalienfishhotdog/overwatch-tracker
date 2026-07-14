@@ -4,22 +4,6 @@
     {
       "src": "api/**/*.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "public/**",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "*.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "*.css",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "app.js",
-      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -28,7 +12,11 @@
       "dest": "/api/[...slug].js"
     },
     {
-      "src": "/(.*\\.(html|css|js|json|png|jpg|ico|svg))",
+      "src": "/(.*\\.(css|js|json|png|jpg|ico|svg|woff|woff2|ttf|eot))",
+      "dest": "/$1"
+    },
+    {
+      "src": "/(.*\\.html)",
       "dest": "/$1"
     },
     {
