@@ -635,17 +635,17 @@
   };
 
   // ---- Socket.IO ------------------------------------------------------------
-  const socket = io();
+  // No Socket.IO - using polling
   const connDot = document.getElementById('conn-dot');
   const connLabel = document.getElementById('conn-label');
 
-  socket.on('connect', () => { connDot.classList.add('live'); connLabel.textContent = 'LIVE'; });
-  socket.on('disconnect', () => { connDot.classList.remove('live'); connLabel.textContent = 'OFFLINE'; });
-  socket.on('server:switched', (data) => {
+  // socket.on('connect', () => { connDot.classList.add('live'); connLabel.textContent = 'LIVE'; });
+  // socket.on('disconnect', () => { connDot.classList.remove('live'); connLabel.textContent = 'OFFLINE'; });
+  // socket.on('server:switched', (data) => {
     if (data.activeServerId && data.activeServerId !== currentServerId) switchServer(data.activeServerId);
   });
 
-  socket.on('perimeter-alert', (alert) => {
+  // socket.on('perimeter-alert', (alert) => {
     // Play alert sound
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -680,7 +680,7 @@
     if (selectedAccount === alert.account) loadIntel(alert.account);
   });
 
-  socket.on('players:update', (payload) => {
+  // socket.on('players:update', (payload) => {
     currentLive = payload.players || [];
     document.getElementById('stat-online').textContent = payload.count ?? currentLive.length;
     document.getElementById('stat-weather').textContent = payload.isThundering ? 'STORM' : (payload.hasStorm ? 'RAIN' : 'CLEAR');
