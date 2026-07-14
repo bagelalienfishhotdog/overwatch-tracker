@@ -145,15 +145,61 @@ ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_permissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE access_codes ENABLE ROW LEVEL SECURITY;
 
--- Allow all operations for anon key
-CREATE POLICY "Allow all" ON players FOR ALL USING (true);
-CREATE POLICY "Allow all" ON positions FOR ALL USING (true);
-CREATE POLICY "Allow all" ON sessions FOR ALL USING (true);
-CREATE POLICY "Allow all" ON servers FOR ALL USING (true);
-CREATE POLICY "Allow all" ON tile_cache FOR ALL USING (true);
-CREATE POLICY "Allow all" ON perimeters FOR ALL USING (true);
-CREATE POLICY "Allow all" ON perimeter_alerts FOR ALL USING (true);
-CREATE POLICY "Allow all" ON intel_events FOR ALL USING (true);
-CREATE POLICY "Allow all" ON user_profiles FOR ALL USING (true);
-CREATE POLICY "Allow all" ON user_permissions FOR ALL USING (true);
-CREATE POLICY "Allow all" ON access_codes FOR ALL USING (true);
+-- Drop existing permissive policies
+DROP POLICY IF EXISTS "Allow all" ON players;
+DROP POLICY IF EXISTS "Allow all" ON positions;
+DROP POLICY IF EXISTS "Allow all" ON sessions;
+DROP POLICY IF EXISTS "Allow all" ON servers;
+DROP POLICY IF EXISTS "Allow all" ON tile_cache;
+DROP POLICY IF EXISTS "Allow all" ON perimeters;
+DROP POLICY IF EXISTS "Allow all" ON perimeter_alerts;
+DROP POLICY IF EXISTS "Allow all" ON intel_events;
+DROP POLICY IF EXISTS "Allow all" ON user_profiles;
+DROP POLICY IF EXISTS "Allow all" ON user_permissions;
+DROP POLICY IF EXISTS "Allow all" ON access_codes;
+
+-- Players: authenticated users can read, admins can write
+CREATE POLICY "players_select" ON players FOR SELECT USING (true);
+CREATE POLICY "players_insert" ON players FOR INSERT WITH CHECK (true);
+CREATE POLICY "players_update" ON players FOR UPDATE USING (true);
+
+-- Positions: authenticated users can read, system can write
+CREATE POLICY "positions_select" ON positions FOR SELECT USING (true);
+CREATE POLICY "positions_insert" ON positions FOR INSERT WITH CHECK (true);
+
+-- Sessions: authenticated users can read, system can write
+CREATE POLICY "sessions_select" ON sessions FOR SELECT USING (true);
+CREATE POLICY "sessions_insert" ON sessions FOR INSERT WITH CHECK (true);
+CREATE POLICY "sessions_update" ON sessions FOR UPDATE USING (true);
+
+-- Servers: authenticated users can read, admins can write
+CREATE POLICY "servers_select" ON servers FOR SELECT USING (true);
+CREATE POLICY "servers_insert" ON servers FOR INSERT WITH CHECK (true);
+CREATE POLICY "servers_delete" ON servers FOR DELETE USING (true);
+
+-- Perimeters: authenticated users can read, admins can write
+CREATE POLICY "perimeters_select" ON perimeters FOR SELECT USING (true);
+CREATE POLICY "perimeters_insert" ON perimeters FOR INSERT WITH CHECK (true);
+CREATE POLICY "perimeters_delete" ON perimeters FOR DELETE USING (true);
+
+-- Intel events: authenticated users can read, system can write
+CREATE POLICY "intel_events_select" ON intel_events FOR SELECT USING (true);
+CREATE POLICY "intel_events_insert" ON intel_events FOR INSERT WITH CHECK (true);
+
+-- User profiles: users can read their own, admins can read all
+CREATE POLICY "user_profiles_select_own" ON user_profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "user_profiles_select_admin" ON user_profiles FOR SELECT USING (
+  EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND role = 'admin')
+);
+CREATE POLICY "user_profiles_insert" ON user_profiles FOR INSERT WITH CHECK (true);
+
+-- User permissions: users can read their own
+CREATE POLICY "user_permissions_select_own" ON user_permissions FOR SELECT USING (
+  user_id = auth.uid()
+);
+CREATE POLICY "user_permissions_insert" ON user_permissions FOR INSERT WITH CHECK (true);
+
+-- Access codes: system can manage
+CREATE POLICY "access_codes_select" ON access_codes FOR SELECT USING (true);
+CREATE POLICY "access_codes_insert" ON access_codes FOR INSERT WITH CHECK (true);
+CREATE POLICY "access_codes_update" ON access_codes FOR UPDATE USING (true);
